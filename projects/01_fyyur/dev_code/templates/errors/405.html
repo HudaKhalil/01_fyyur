@@ -1,6 +1,6 @@
 {% extends 'layouts/main.html' %}
 {% block content %}
-  <h1>404 - Not Found</h1>
-  <p>There's nothing here! The requested page could not be found</p>
+  <h1>405 - Method Not Allowed</h1>
+  <p>The request method is not supported for the requested resource</p>
   <p><a href="{{url_for('index')}}">Back</a></p>
 {% endblock %}
