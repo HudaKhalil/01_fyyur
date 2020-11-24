@@ -34,11 +34,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Association table Show Definition
 Show = db.Table('show', db.Model.metadata,
                 db.Column('venue_id', db.Integer, db.ForeignKey(
-                    'venue.id', ondelete="CASCADE"), primary_key=True),
+                    'venue.id'), primary_key=True),
                 db.Column('artist_id', db.Integer, db.ForeignKey(
-                    'artist.id', ondelete="CASCADE"), primary_key=True),
+                    'artist.id'), primary_key=True),
                 db.Column('start_time', db.DateTime))
-
+# ondelete = "CASCADE"
 
 class Venue(db.Model):
     __tablename__ = 'venue'
@@ -76,4 +76,6 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(500))
+
+
 

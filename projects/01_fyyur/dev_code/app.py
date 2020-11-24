@@ -93,8 +93,7 @@ def venues():
   data = get_dict_list_from_result(groupby_venues_result)
 
   # Loop through Query List and append Venue data
-  for area in data:
-      
+  for area in data:  
       # ist of venues that are in the same city, and add it to new dictionary-key 'venues'
       area['venues'] = [object_as_dict(
           ven) for ven in Venue.query.filter_by(city=area['city']).all()]
@@ -103,32 +102,29 @@ def venues():
         # counts how many upcoming shows the venue has.
         ven['num_shows'] = db.session.query(func.count(Show.c.venue_id)).filter(
             Show.c.venue_id == ven['id']).filter(Show.c.start_time > datetime.now()).all()[0][0]
-      
   return render_template('pages/venues.html', areas=data)
 
 # Search Venue
 #----------------------------------------------------------------------------#
-@app.route('/venues/search', methods=['POST'])
+
+
+@app.route('/venues/search', methods=['POST','GET'])
 def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.<Done>
+  # seach for Hop should return "The Musical Hop".
+  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   # Using ilike for case-insensitive
   # "https://stackoverflow.com/questions/40412034/flask-sqlalchemy-contains-ilike-producing-different-results#:~:text=Therefore%2C%20to%20match%20a%20sequence,sensitive%2C%20while%20ilike%20is%20insensitive."
-  search_term = request.form.get('search_term', '')
-  flash('Test1')
-  venues_result_count = (db.session.query(func.count(Venue.id)).filter(Venue.name.ilike(
-      '%{}%'.format(search_term))).all())
-  flash('Test2')
-  
-  venues_result = Venue.query.filter(Venue.name.ilike(
-      '%{}%'.format(search_term))).all()
-  flash('Test3')
-  response = {
-      "count": venues_result_count[0][0],
-      "data": venues_result
-  }
-  flash('Test4')
-  return render_template('pages/venues.html', results=response, search_term=search_term)
+    search = request.form.get('search_term', '')
+    venues = Venue.query.filter(Venue.name.ilike('%{}%'.format(search))).all()
+    count_venues=len(venues)
 
+    response = {
+    'count': count_venues,
+    'data': venues
+    }
+
+    return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
@@ -303,19 +299,17 @@ def artists():
   return render_template('pages/artists.html', artists=artist_data)
 
 
-@app.route('/artists/search', methods=['POST'])
+@app.route('/artists/search', methods=['POST', 'GET'])
 def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive. <Done>
-
-  search_term = request.form.get('search_term', '')
-  artist_results = Artist.query.filter(Artist.name.ilike(
-      '%{}%'.format(search_term ))).all()
-
+  search = request.form.get('search_term', '')
+  artists = Artist.query.filter(Artist.name.ilike('%{}%'.format(search))).all()
+  count_artists = len(artists)
   response = {
-      "count": len(artist_results),
-      "data": artist_results
+      'count': count_artists,
+      'data': artists
   }
-  return render_template('pages/search_artists.html', results=response, search_term=search_term)
+  return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 # Show Artist  
 #---------------------------------------------------------------------------------------------------# 
@@ -465,7 +459,8 @@ def shows():
       .all())
   return render_template('pages/shows.html', shows=data)
 
-@app.route('/shows/create')
+
+@app.route('/shows/create',  methods=['GET'])
 def create_shows():
   # renders form. do not touch.
   form = ShowForm()
@@ -479,8 +474,8 @@ def create_show_submission():
   if form.validate():
     try:     
       newShow = Show.insert().values(
-          Venue_id=request.form['venue_id'],
-          Artist_id=request.form['artist_id'],
+          venue_id=request.form['venue_id'],
+          artist_id=request.form['artist_id'],
           start_time=request.form['start_time']
       )
       db.session.execute(newShow)
@@ -499,10 +494,6 @@ def create_show_submission():
     flash('An error occurred due to form validation. Show could not be listed.')
   return render_template('pages/home.html')
 
-
-@app.errorhandler(400)
-def not_found_error(error):
-    return render_template('errors/400.html'), 400
 
 @app.errorhandler(401)
 def not_found_error(error):

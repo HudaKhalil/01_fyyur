@@ -1,5 +1,6 @@
 from collections import namedtuple
 from datetime import datetime
+from models import Venue
 from flask_wtf import Form
 from wtforms import (StringField, 
         SelectField, 
@@ -11,7 +12,7 @@ from wtforms.validators import (DataRequired,
                                 URL)
 # from enum import Enum, auto
 from types import *
-
+# from models import db
 #------------------------------------------------------------------------------#
 # Conests
 #------------------------------------------------------------------------------#
@@ -92,23 +93,22 @@ Genres = [
 
 #------------------------------------------------------------------------------#
 
-
-
-
-
 class ShowForm(Form):
     artist_id = StringField(
         'artist_id'
     )
     venue_id = StringField(
-        'venue_id'
+             'venue_id'
+        #      validators = [DataRequired()],
+        # choices= db.session.query(Venue.id)
+    # StringField(
+    #     'venue_id'
     )
     start_time = DateTimeField(
         'start_time',
         validators=[DataRequired()],
         default= datetime.today()
     )
-
 
 
 class VenueForm(Form):
