@@ -20,6 +20,7 @@ import logging
 from logging import (Formatter, 
                      FileHandler, 
                      error)
+from sqlalchemy.sql.operators import as_
 # from flask_inputs import Inputs
 # from wtforms.validators import DataRequired
 # from sqlalchemy.sql.schema import PrimaryKeyConstraint
@@ -30,6 +31,8 @@ from models import (Venue,
                     Artist, 
                     app, 
                     db)
+
+from re import ASCII
  #----------------------------------------------------------------------------#
  # New Functions
  #----------------------------------------------------------------------------#
@@ -80,21 +83,13 @@ def venues():
   # TODO: replace with real venues data.<Done>
   # num_shows should be aggregated based on number of upcoming shows per venue.
   # Get City & State in Venues  
-  groupby_venues_result = (db.session.query(
-    Venue.city,
-    Venue.state
-)
-    .group_by(
-    Venue.city,
-    Venue.state
-)
-)
+  venues_result = (db.session.query(Venue.city,Venue.state)
+    .group_by(Venue.city,Venue.state))
   # Create dictionary list for the query
-  data = get_dict_list_from_result(groupby_venues_result)
-
+  data = get_dict_list_from_result(venues_result)
   # Loop through Query List and append Venue data
   for area in data:  
-      # ist of venues that are in the same city, and add it to new dictionary-key 'venues'
+      # List of venues that are in the same city, and add it to new dictionary-key 'venues'
       area['venues'] = [object_as_dict(
           ven) for ven in Venue.query.filter_by(city=area['city']).all()]
       # Append num_shows
@@ -102,6 +97,7 @@ def venues():
         # counts how many upcoming shows the venue has.
         ven['num_shows'] = db.session.query(func.count(Show.c.venue_id)).filter(
             Show.c.venue_id == ven['id']).filter(Show.c.start_time > datetime.now()).all()[0][0]
+  
   return render_template('pages/venues.html', areas=data)
 
 # Search Venue
@@ -115,59 +111,74 @@ def search_venues():
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   # Using ilike for case-insensitive
   # "https://stackoverflow.com/questions/40412034/flask-sqlalchemy-contains-ilike-producing-different-results#:~:text=Therefore%2C%20to%20match%20a%20sequence,sensitive%2C%20while%20ilike%20is%20insensitive."
-    search = request.form.get('search_term', '')
-    venues = Venue.query.filter(Venue.name.ilike('%{}%'.format(search))).all()
-    count_venues=len(venues)
+    # search = request.form.get('search_term', '')
+    # venues = Venue.query.filter(Venue.name.ilike('%{}%'.format(search))).all()
+    # count_venues=len(venues)
 
-    response = {
-    'count': count_venues,
-    'data': venues
-    }
+    # response = {
+    # 'count': count_venues,
+    # 'data': venues
+    # }
+  search = request.form.get('search_term', '')
+  flash(search)
+  venues = Venue.query.filter(Venue.name.ilike(f'%{search}%'))
+  
+  count = venues.count()
+  venues = venues.all()
+  response_data = []
+  for venue in venues:
+    v={"id":venue.id,
+       "name":venue.name,
+       "num_upcoming_shows": (db.session.query(Show).join(Venue).filter(
+           Show.c.venue_id == Venue.id,
+           Show.c.start_time > datetime.now(), Venue.id == venue.id).all())}
+    flash(v)
+    response_data.append(v)
+  response={
+    "count": count,
+    "data": response_data
+  }
 
-    return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
+  return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id <Done>
-   # Get Venue Data
-  venue_query = Venue.query.get(venue_id)
-  # Get Past Shows Data
-  venue_query.past_shows = (db.session.query(
-      Artist.id.label("artist_id"),
-      Artist.name.label("artist_name"),
-      Artist.image_link.label("artist_image_link"),Show)
-      .filter(Show.c.venue_id == venue_id)
-      .filter(Show.c.artist_id == Artist.id)
-      .filter(Show.c.start_time <= datetime.now())
-      .all())
+  #  # Get Venue Data
+  venue = Venue.query.filter(Venue.id == venue_id).first()
 
+ # Get Past Shows Data
+  past_shows = db.session.query(Show, Artist.id.label("artist_id"),
+                                Artist.name.label("artist_name"),
+                                Artist.image_link.label("artist_image_link")).join(Venue).filter(Show.c.venue_id == Venue.id,
+                                                        Show.c.start_time < datetime.now(),
+      Venue.id == venue_id, Artist.id == Show.c.artist_id).all()
   # Get Upcomming Shows
-  venue_query.upcoming_shows = (db.session.query(
-      Artist.id.label("artist_id"),
-      Artist.name.label("artist_name"),
-      Artist.image_link.label("artist_image_link"),Show)
-      .filter(Show.c.venue_id == venue_id)
-      .filter(Show.c.artist_id == Artist.id)
-      .filter(Show.c.start_time > datetime.now())
-      .all())
-
-  # Get Number of Upcoming Shows
-  venue_query.upcoming_shows_count = (db.session.query(
-      func.count(Show.c.venue_id))
-      .filter(Show.c.venue_id == venue_id)
-      .filter(Show.c.start_time > datetime.now())
-      .all())[0][0]
-  
-  # Get Number of past Shows
-  venue_query.past_shows_count = (db.session.query(
-      func.count(Show.c.venue_id))
-      .filter(Show.c.venue_id == venue_id)
-      .filter(Show.c.start_time < datetime.now())
-      .all())[0][0]
-
-
-  return render_template('pages/show_venue.html', venue=venue_query)
+  upcoming_shows = db.session.query(Show, Artist.id.label("artist_id"),
+                                    Artist.name.label("artist_name"),
+                                    Artist.image_link.label("artist_image_link")).join(Venue).filter(
+    Show.c.venue_id == Venue.id,
+    Show.c.start_time > datetime.now(), Venue.id == venue_id, Artist.id == Show.c.artist_id).all()
+    
+  data = {
+      "id": venue.id,
+      "name": venue.name,
+      "genres": venue.genres,
+      "city": venue.city,
+      "state": venue.state,
+      "phone": venue.phone,
+      "website": venue.website,
+      "facebook_link": venue.facebook_link,
+      "seeking_talent": venue.seeking_talent,
+      "seeking_description": venue.seeking_description,
+      "image_link": venue.image_link,
+      "past_shows": past_shows,
+      "upcoming_shows": upcoming_shows,
+      "past_shows_count": len(past_shows),
+      "upcoming_shows_count": len(upcoming_shows)
+  }
+  return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
 #  ----------------------------------------------------------------

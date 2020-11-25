@@ -37,7 +37,7 @@ Show = db.Table('show', db.Model.metadata,
                     'venue.id'), primary_key=True),
                 db.Column('artist_id', db.Integer, db.ForeignKey(
                     'artist.id'), primary_key=True),
-                db.Column('start_time', db.DateTime))
+                db.Column('start_time', db.DateTime, primary_key=True))
 # ondelete = "CASCADE"
 
 class Venue(db.Model):
