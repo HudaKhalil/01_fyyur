@@ -98,8 +98,7 @@ class ShowForm(Form):
         'artist_id'
     )
     venue_id = StringField(
-             'venue_id'
-        #      validators = [DataRequired()],
+             'venue_id',
         # choices= db.session.query(Venue.id)
     # StringField(
     #     'venue_id'
