@@ -1,30 +1,20 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-# import json
-# import dateutil.parser
 from datetime import datetime
-from threading import Event
 import babel
 from flask import (render_template, 
                    request, 
                    flash, 
                    redirect, 
                    url_for,
-                   jsonify)
-from flask_wtf.csrf import validate_csrf
-# from flask_wtf import Form
+                   )
 from sqlalchemy import (func, 
                         inspect)
 import logging
 from logging import (Formatter, 
-                     FileHandler, 
-                     error)
-from sqlalchemy.sql.operators import as_
-# from flask_inputs import Inputs
-# from wtforms.validators import DataRequired
-# from sqlalchemy.sql.schema import PrimaryKeyConstraint
-from wtforms import Form
+                     FileHandler
+                    )
 from forms import *
 from models import (Venue, 
                     Show, 
@@ -33,7 +23,6 @@ from models import (Venue,
                     db)
 
 from string import *
-from sqlalchemy.orm import clear_mappers
  #----------------------------------------------------------------------------#
  # New Functions
  #----------------------------------------------------------------------------#
@@ -224,7 +213,7 @@ def create_venue_submission():
 
 # Delete Venue
 #-----------------------------------------------------------------------------------------#
-@app.route('/venues/<venue_id>/delete', methods=['GET','DELETE'])
+@app.route('/venues/<venue_id>/delete', methods=['DELETE'])
 def delete_venue(venue_id):
     # TODO: Complete this endpoint for taking a venue_id, and using<Done>
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
@@ -305,7 +294,7 @@ def artists():
   return render_template('pages/artists.html', artists=artist_data)
 
 
-@app.route('/artists/search', methods=['POST', 'GET'])
+@app.route('/artists/search', methods=['GET'])
 def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive. <Done>
   search = request.args.get('search_term', '')

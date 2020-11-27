@@ -3,9 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_moment import Moment
 from flask import Flask
-from sqlalchemy import Integer, ForeignKey, Column, PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
 # Import local database URI from Config File
 from config import SQLALCHEMY_DATABASE_URI
 from extensions import csrf
