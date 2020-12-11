@@ -1,3 +1,4 @@
+from logging import error
 import os
 from flask import (Flask, request, abort, jsonify)
 # from flask_sqlalchemy import SQLAlchemy
@@ -46,27 +47,32 @@ def create_app(test_config=None):
     response.headers.add('Access-Control-Allow-Methods','GET,PUT,POST,DELETE,OPTIONS')
     return response
   
-  # Delete the sample route after completing the TODOs
-  @app.route('/')
-  def hello():
-    return jsonify({'message': 'Hello World'})
+  # # Delete the sample route after completing the TODOs
+  # @app.route('/')
+  # def hello():
+  #   return jsonify({'message': 'Hello World'})
   
   '''
   @TODO: 
   Create an endpoint to handle GET requests 
   for all available categories.
   '''
-  @app.route('/categories')
+  @app.route('/categories', methods=['GET'])
   def get_categories():
     selection = Category.query.order_by(Category.id).all()
     current_categories = [Category.format() for Category in selection]
 
+    all_categories = []
+    for cat in current_categories:
+        all_categories.append(cat['type'])
+        
     if len(current_categories) == 0:
       abort(404)
-
+    
+      
     return jsonify({
         'success': True,
-        'categories': current_categories
+        'categories': all_categories
     })
 
   '''
@@ -77,31 +83,28 @@ def create_app(test_config=None):
   number of total questions, current category, categories. 
   '''
   @app.route('/questions', methods=['GET'])
-  def get_questions():
-    selection = Question.query.order_by(Question.id).all()
-    categories = Category.query.all()
-    categories_all = [category.format() for category in categories]
-
-    # Initialize empty list to be filled & returned
-    categories_returned = []
-    questions_paginated = []
-    for cat in categories_all:
-      categories_returned.append({cat['id']: cat['type']})
-      question_list = Question.query.filter(Question.category == str(cat['id'])).order_by(Question.id)
-      questions_returned = paginate_questions(request, question_list)
-      questions_paginated.append({cat['type']:questions_returned}) # Current Category : Questions List
+  def get_questions():   
+      selection = Question.query.order_by(Question.id).all()
       
-    if len(questions_paginated) == 0:
-           abort(404)
-          
-    return jsonify({
-        'success': True,
-        'questions': questions_paginated,
-        'total_questions': len(selection),
-        'categories': categories_returned,
-        'current_category': None  # Questions grouped by current category
-    })
- 
+      current_questions = paginate_questions(request, selection)
+      
+      categories = [category.format() for category in (
+          Category.query.order_by(Category.id).all())]
+      all_categories = []
+      for cat in categories:
+        all_categories.append(cat['type'])
+        
+      if len(selection) == 0:
+            abort(404)
+
+      # current_cat = current_questions[id].category
+      return jsonify({
+          'success': True,
+          'questions': current_questions,
+          'total_questions': len(selection),
+          'current_category': None,
+          'categories': all_categories
+      })
   '''
   TEST: At this point, when you start the application
   you should see questions and categories generated,
@@ -128,7 +131,7 @@ def create_app(test_config=None):
           'success': True,
           'deleted:': question_id,
           'questions': current_questions,
-          'total_books': len(Question.query.all())
+          'total_questions': len(selection)
       })
     except:
       abort(422)
@@ -150,21 +153,27 @@ def create_app(test_config=None):
     new_answer = body.get('answer', None)
     new_category = body.get('category', None)
     new_difficulty = body.get('difficulty', None)
-    search = body.get('search', None)
+    search = body.get('searchTerm', None)
     try:
       # Create a POST endpoint to get questions based on a search term.
       # It should return any questions for whom the search term
       # is a substring of the question.
       if search:
         selection = Question.query.order_by(Question.id).filter(
-            Question.question.ilike('%{}%'.format(search)))
+            Question.question.ilike('%{}%'.format(search))).all()
 
         current_questions = paginate_questions(request, selection)
-
+        categories = Category.query.all()
+        current_categories = [category.format() for category in categories]
+        all_categories = []
+        for cat in current_categories:
+          all_categories.append(cat['type'])
+              
         return jsonify({
             'success': True,
             'questions': current_questions,
-            'total_questions': len(selection.all())
+            'total_questions': len(selection),
+            'current_category': all_categories
         }) 
       else:
         question = Question(question=new_question, answer=new_answer, category=new_category,
@@ -173,12 +182,15 @@ def create_app(test_config=None):
 
         selection = Question.query.order_by(Question.id).all()
         current_questions = paginate_questions(request, selection)
+        categories = Category.query.all()
+        all_categories = [category.format() for category in categories]
 
         return jsonify({
             'success': True,
             'created:': question.id,
             'questions': current_questions,
-            'total_questions': len(Question.query.all())
+            'total_questions': len(selection),
+            'current_category': all_categories
           })
     except:
         abort(422)
@@ -206,23 +218,45 @@ def create_app(test_config=None):
   @TODO: 
   Create a GET endpoint to get questions based on category. 
   '''
-  @app.route('/categories/<int:category_id>/questions', methods=['GET'])
+  @app.route('/categories/<string:category_id>/questions', methods=['GET'])
+  # def get_questions_by_category(id):
+  #   selection = (Question.query
+  #                .filter(Question.category == str(id))
+  #                .order_by(Question.id)
+  #                .all())
+  #   if not selection:
+  #     abort(400)
+    
+  #   current_questions = paginate_questions(request, selection)
+    
+  #   return jsonify({
+  #       'success': True,
+  #       'questions': current_questions,
+  #       'total_questions': len(selection),
+  #       'current_category': id
+  #   })
   def get_questions_by_category(category_id):
-    selection = Question.query.filter(Question.category == str(category_id)).order_by(Question.id).all()
-    current_category = Category.query.filter(Category.id == category_id).order_by(Category.id).first()
-    categories_returned = [current_category.format()]
-          
-    if not selection:
-      abort(400)
-    
-    current_questions = paginate_questions(request, selection)
-    
-    return jsonify({
-        'success': True,
-        'questions': current_questions,
-        'total_questions': len(selection),
-        'current_category': categories_returned
-    })
+     selection = Question.query.filter(Question.category== category_id).order_by(Question.id).all()
+  
+     category = Category.query.filter(Category.id == category_id).all()
+      
+
+   
+     categories = [cat.format() for cat in category]
+     category_returned = []
+     for cat in categories:
+        category_returned.append(cat['type'])
+        
+      
+     current_questions = paginate_questions(request, selection)
+      
+      
+     return jsonify({
+      'success': True,
+      'questions': current_questions,
+      'total_questions': len(selection),
+      'current_category': category_returned
+                  })
 
   '''
   TEST: In the "List" tab / main screen, clicking on one of the 

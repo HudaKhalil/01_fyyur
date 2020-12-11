@@ -30,11 +30,12 @@ class QuestionView extends Component {
           questions: result.questions,
           totalQuestions: result.total_questions,
           categories: result.categories,
-          currentCategory: result.current_category })
+          currentCategory: result.current_category})
         return;
       },
       error: (error) => {
         alert('Unable to load questions. Please try your request again')
+        // console.log(error)
         return;
       }
     })
@@ -71,6 +72,7 @@ class QuestionView extends Component {
       },
       error: (error) => {
         alert('Unable to load questions. Please try your request again')
+        // console.log(error)
         return;
       }
     })
@@ -96,6 +98,7 @@ class QuestionView extends Component {
       },
       error: (error) => {
         alert('Unable to load questions. Please try your request again')
+        // console.log(error)
         return;
       }
     })
@@ -129,6 +132,7 @@ class QuestionView extends Component {
               <li key={id} onClick={() => {this.getByCategory(id)}}>
                 {this.state.categories[id]}
                 <img className="category" src={`${this.state.categories[id]}.svg`}/>
+                
               </li>
             ))}
           </ul>
@@ -141,7 +145,7 @@ class QuestionView extends Component {
               key={q.id}
               question={q.question}
               answer={q.answer}
-              category={this.state.categories[q.category]} 
+              category={this.state.categories[parseInt(q.category)]} 
               difficulty={q.difficulty}
               questionAction={this.questionAction(q.id)}
             />
