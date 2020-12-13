@@ -5,7 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 
 from flaskr import create_app
 from models import setup_db, Question, Category
-
+from config import database_setup
+from sqlalchemy import desc
 
 class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
@@ -33,7 +34,30 @@ class TriviaTestCase(unittest.TestCase):
     TODO
     Write at least one test for each test for successful operation and for expected errors.
     """
+#----------------------------------------------------------------------------#
+# Tests for /categories/<string:category_id>/questions GET
+#----------------------------------------------------------------------------#
 
+    def test_get_paginated_questions(self):
+        # Response for specific route
+        res = self.client().get('/categories/2/questions')
+        # Load the data
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertTrue(len(data['questions']))
+        self.assertTrue(data['total_questions'])
+        self.assertEqual(data['current_category'])
+
+    # # Test #2
+    # def test_404_sent_requesting_beyond_valid_page(self):
+    #     res = self.client().get('/books?page=50', json={'rating': 1})
+    #     data = json.loads(res.data)
+
+    #     self.assertEqual(res.status_code, 404)
+    #     self.assertEqual(data['success'], False)
+    #     self.assertEqual(data['message'], 'Resource not Found')
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
