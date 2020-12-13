@@ -97,18 +97,21 @@ def create_app(test_config=None):
   '''
   @app.route('/categories', methods=['GET'])
   def get_categories():
-    selection = Category.query.order_by(Category.id).all()
-  
-        
+    selection = Category.query.order_by(Category.id).all() 
+      
     if len(selection) == 0:
       abort(404)
-    
-      
+         
     return jsonify({
         'success': True,
-        'categories': {category.id: category.type for category in selection}
+        'categories': {category.id: category.type for category in selection }
     })
-
+  '''
+  TEST: GET /categories
+        Pass: test_get_categories
+        Fail: test_405_post_categories
+  '''
+  
   '''
   @TODO: 
   Create an endpoint to handle GET requests for questions, 
@@ -142,6 +145,11 @@ def create_app(test_config=None):
   Clicking on the page numbers should update the questions. 
   '''
   '''
+  TEST: GET /questions
+        Pass: test_get_questions_per_page
+        Fail: test_404_sent_requesting_not_valid_page
+  '''
+  '''
   @TODO: 
   Create an endpoint to DELETE question using a question ID. 
   '''
@@ -169,7 +177,11 @@ def create_app(test_config=None):
   TEST: When you click the trash icon next to a question, the question will be removed.
   This removal will persist in the database and when you refresh the page. 
   '''
-
+  '''
+  TEST: GET /questions
+        Pass: test_get_questions_per_page
+        Fail: test_404_sent_requesting_not_valid_page
+  '''
   '''
   @TODO: 
   Create an endpoint to POST a new question, 
@@ -194,17 +206,15 @@ def create_app(test_config=None):
 
         selection = Question.query.order_by(Question.id).all()
         current_questions = paginate_questions(request, selection)
-        categories = Category.query.all()
-        all_categories = format_categories(categories)
-        
+
+
         return jsonify({
             'success': True,
-            'created:': question.id,
+            'created': question.id,
             'questions': current_questions,
-            'total_questions': len(selection),
-            'current_category': all_categories
-      })
-      
+            'total_questions': len(selection)
+            
+          })
     except:
       db.session.rollback()
       abort(400)
@@ -216,7 +226,11 @@ def create_app(test_config=None):
   the form will clear and the question will appear at the end of the last page
   of the questions list in the "List" tab.  
   '''
-
+  '''
+  TEST: POST /questions
+        Pass: test_create_new_question
+        Fail: test_400_create_new_question
+  '''
   '''
   @TODO: 
   Create a POST endpoint to get questions based on a search term. 
@@ -231,8 +245,9 @@ def create_app(test_config=None):
     selection = Question.query.order_by(Question.id).filter(
         Question.question.ilike('%{}%'.format(search))).all()
 
-    if selection is None:
-        abort(404, {'message': 'No questions contains "{}" found.'.format(search)})
+    if len(selection) == 0:
+        # abort(404, {'message': 'No questions contains "{}" found.'.format(search)})
+        abort(404, {'message': 'No questions contains found.' })
     else:   
       current_questions = paginate_questions(request, selection)
       categories = Category.query.all()
@@ -249,7 +264,11 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
-
+  '''
+  TEST: POST /questions/search
+        Pass: test_search_questions
+        Fail: test_404_search_questions
+  '''
   '''
   @TODO: 
   Create a GET endpoint to get questions based on category. 
@@ -264,8 +283,9 @@ def create_app(test_config=None):
     current_questions = paginate_questions(request, selection)
     current_category = Category.query.filter(
         Category.id == int(category_id)).all()
-    if selection is None :
-      abort(400, {'message': 'No questions with category {} found.'.format(category_id)})
+    if len(selection) == 0:
+      # abort(400, {'message': 'No questions with category {} found.'.format(category_id)})
+      abort(400, {'message': 'No questions with category id found.'})
 
     if current_questions is None:
       abort(404, {'message': 'No questions in selected page.'})
@@ -282,8 +302,11 @@ def create_app(test_config=None):
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
-
-
+  '''
+  TEST: GET /categories/<string:category_id>/questions
+        Pass: test_get_questions_by_category
+        Fail: test_400_get_questions_by_category
+  '''
   '''
   @TODO: 
   Create a POST endpoint to get questions to play the quiz. 
@@ -297,7 +320,7 @@ def create_app(test_config=None):
     body = request.get_json()
     
     if not body:
-      abort(400, {'message': 'Please choose optional category.'})
+      abort(400, {'message': 'Please provide quiz data.'})
       
     previous_questions = body.get('previous_questions', None)
     current_category = body.get('current_category', None)
@@ -339,13 +362,18 @@ def create_app(test_config=None):
   one question at a time is displayed, the user is allowed to answer
   and shown whether they were correct or not. 
   '''
+  '''
+   TEST: POST '/quizzes'
+        Pass: test_play_quiz_with_category
+        Fail: test_400_play_quiz_with_category
+  '''
 #----------------------------------------------------------------------------#
 # Error Handlers
 #----------------------------------------------------------------------------#
   '''
   @TODO: 
   Create error handlers for all expected errors 
-  including 404 and 422. 
+  including 404 and 422.
   '''
   @app.errorhandler(400)
   def bad_request(error):
